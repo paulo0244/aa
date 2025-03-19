@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leitor de QR Code com Áudio</title>
+    <style>
+        /* Estilos básicos */
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f4f4;
+            flex-direction: column;
+        }
+        #qr-canvas {
+            display: none;
+        }
+        #video {
+            border: 1px solid #ccc;
+        }
+        button {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        h1 {
+            font-size: 24px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Leitor de QR Code com Áudio</h1>
+    <video id="video" width="300" height="200" autoplay></video>
+    <canvas id="qr-canvas"></canvas>
+    <button id="start-button">Iniciar Leitura</button>
+    
+    <!-- Carregar a biblioteca jsQR -->
+    <script src="https://unpkg.com/jsqr/dist/jsQR.js"></script>
+
+    <script>
+        // Definir variáveis de referência
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('qr-canvas');
+        const context = canvas.getContext('2d');
+        const startButton = document.getElementById('start-button');
+
+        // Iniciar a captura da câmera
+        startButton.addEventListener('click', async () => {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+            video.srcObject = stream;
+
+            video.onplay = () => {
+                scanQRCode();
+            };
+        });
+
+        // Função para processar o QR Code
+        function scanQRCode() {
+            if (video.paused || video.ended) return;
+
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+            const code = jsQR(imageData.data, canvas.width, canvas.height);
+
+            if (code) {
+                alert('QR Code Detectado: ' + code.data);
+                speakQRCode(code.data);  // Traduz para áudio
+            }
+
+            // Chama a função novamente para continuar verificando
+            requestAnimationFrame(scanQRCode);
+        }
+
+        // Função para ler o conteúdo do QR Code em áudio
+        function speakQRCode(data) {
+            const speech = new SpeechSynthesisUtterance(data);
+            window.speechSynthesis.speak(speech);
+        }
+    </script>
+</body>
+</html>
